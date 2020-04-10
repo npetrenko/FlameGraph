@@ -154,6 +154,7 @@ sub inline {
 
 my @stack;
 my $pname;
+my $alloc_size;
 my $m_pid;
 my $m_tid;
 
@@ -191,7 +192,7 @@ while (defined($_ = <>)) {
 				unshift @stack, "";
 			}
 		}
-		remember_stack(join(";", @stack), 1) if @stack;
+		remember_stack(join(";", @stack), $alloc_size) if @stack;
 		undef @stack;
 		undef $pname;
 		next;
@@ -200,7 +201,7 @@ while (defined($_ = <>)) {
 	#
 	# event record start
 	#
-	if (/^(\S.+?)\s+(\d+)\/*(\d+)*\s+/) {
+	if (/^(\S.+?)\s+(\d+)\/*(\d+)*\s+.*size=(\S+)$/) {
 		# default "perf script" output has TID but not PID
 		# eg, "java 25607 4794564.109216: cycles:"
 		# eg, "java 12688 [002] 6544038.708352: cpu-clock:"
@@ -209,7 +210,7 @@ while (defined($_ = <>)) {
 		# eg, "java 12688/12764 6544038.708352: cpu-clock:"
 		# eg, "V8 WorkerThread 24636/25607 [000] 94564.109216: cycles:"
 		# other combinations possible
-		my ($comm, $pid, $tid) = ($1, $2, $3);
+		my ($comm, $pid, $tid, $asize) = ($1, $2, $3, $4);
 		if (not $tid) {
 			$tid = $pid;
 			$pid = "?";
@@ -246,6 +247,7 @@ while (defined($_ = <>)) {
 			$pname = "$comm";
 		}
 		$pname =~ tr/ /_/;
+        $alloc_size = hex($asize)
 
 	#
 	# stack line
